@@ -1,0 +1,118 @@
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --sidebar-bg-color: #f5f5f5;
+  --sidebarButton-bg-color: #7AA7D2;
+  --sidebarButton-hv-color: #6891B8;
+  --log-entry-bg-color: #ffffff;
+  --iconbar-bg-color: #D0E8FF; /* Light theme iconbar background */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #121212;
+    --text-color: #ffffff;
+    --sidebar-bg-color: #242424;
+    --sidebarButton-bg-color: #4178A0;
+    --sidebarButton-hv-color: #2E5A8D;
+    --log-entry-bg-color: #1e1e1e;
+    --iconbar-bg-color: #162238; /* Dark theme iconbar background */
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+#app {
+  display: flex;
+}
+
+#iconbar {
+  width: 5%;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  padding-top: 20;
+  padding-right: 5;
+  padding-bottom: 20;
+  padding-left: 5;
+  background-color: var(--iconbar-bg-color)!important;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#iconbar div {
+  cursor: pointer;
+  margin: 5px 0;
+  /* Add more styling for the icons */
+}
+
+#sidebar {
+  width: 15%;
+  margin-left: 6%;
+  padding-top: 20;
+  padding-bottom: 20;
+  background-color: var(--sidebar-bg-color);
+  height: 100vh;
+  overflow-y: auto;
+}
+
+#log-content {
+  font-family: 'Roboto', sans-serif;
+  font-size: small;
+  width: 80%;
+  padding: 20px;
+  background-color: var(--sidebar-bg-color);
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebarDate {
+  font-family: 'Roboto', sans-serif;
+  font-size: small;
+  text-align: right;
+  padding: 5px;
+  padding-right: 15px;
+  border-radius: 5px; /* Adjust the radius as needed for round corners */
+  background-color: var(--log-entry-bg-color);
+  cursor: pointer; /* Change cursor to pointer to indicate it's clickable */
+  margin-bottom: 3px; /* Optional: adds a little space between each date */
+  transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+.sidebarButton {
+  font-family: 'Roboto', sans-serif;
+  font-size: small;
+  text-align: center;
+  color: var(--text-color);
+  border: none; /* No border for a modern look */
+  padding: 10px 15px;
+  padding-right: 15px;
+  width: 100%;
+  border-radius: 5px; /* Adjust the radius as needed for round corners */
+  background-color: var(--sidebarButton-bg-color);
+  cursor: pointer; /* Change cursor to pointer to indicate it's clickable */
+  margin-bottom: 5px; /* Optional: adds a little space between each date */
+  transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+.sidebarButton:hover {
+  background-color: var(--sidebarButton-hv-color); 
+}
+
+.contentRow {
+  font-family: 'Roboto', sans-serif;
+  font-size: small;
+  text-align: left;
+  padding: 8px;
+  background-color: var(--log-entry-bg-color);
+  margin-bottom: 1px; /* Optional: adds a little space between each date */
+  transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
