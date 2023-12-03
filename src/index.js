@@ -117,13 +117,13 @@ function loadSettings() {
   sidebar.innerHTML = '';
   logContent.innerHTML = '';
 
-  // Create the "Token Settings" button
-  const tokenSettingsButton = document.createElement('button');
-  tokenSettingsButton.textContent = 'Token Settings';
-  tokenSettingsButton.id = 'tokenSettings';
-  tokenSettingsButton.className = 'sidebarButton';
-  tokenSettingsButton.addEventListener('click', tokenSettingsHandler);
-  sidebar.appendChild(tokenSettingsButton);
+  // Create the "Developer Settings" button
+  const devSettingsButton = document.createElement('button');
+  devSettingsButton.textContent = 'Developer Settings';
+  devSettingsButton.id = 'devSettings';
+  devSettingsButton.className = 'sidebarButton';
+  devSettingsButton.addEventListener('click', developerSettingsHandler);
+  sidebar.appendChild(devSettingsButton);
 
   // Create the "Generate Token" button
   const generateTokenButton = document.createElement('button');
@@ -134,10 +134,87 @@ function loadSettings() {
   sidebar.appendChild(generateTokenButton);
 
   // Define the handlers for the buttons
-  function tokenSettingsHandler() {
-      console.log('Token Settings clicked');
-      // Implement the logic or show the token settings
+  function developerSettingsHandler() {
+    console.log('Developer Settings clicked');
+
+    // Clear the log-content div
+    const logContent = document.getElementById('log-content');
+    logContent.innerHTML = '';
+
+    // Create the form element
+    const form = document.createElement('form');
+    form.addEventListener('submit', handleFormSubmit);
+
+    // Create the company name input
+    const companyNameInput = document.createElement('input');
+    companyNameInput.type = 'text';
+    companyNameInput.name = 'companyName';
+    companyNameInput.placeholder = 'Company Name';
+    companyNameInput.required = true;
+
+    // Create the user name (email) input
+    const userNameInput = document.createElement('input');
+    userNameInput.type = 'text';
+    userNameInput.name = 'userName';
+    userNameInput.placeholder = 'User Name';
+    userNameInput.required = true;
+
+    // Create the password input
+    const passwordInput = document.createElement('input');
+    passwordInput.type = 'password';
+    passwordInput.name = 'password';
+    passwordInput.placeholder = 'Password';
+    passwordInput.required = true;
+
+    // Create the submit button
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.textContent = 'Generate Token';
+
+    // Append inputs and button to the form
+    form.appendChild(companyNameInput);
+    form.appendChild(userNameInput);
+    form.appendChild(passwordInput);
+    form.appendChild(submitButton);
+
+    // Append the form to the log-content div
+    logContent.appendChild(form);
   }
+
+  function handleFormSubmit(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    const logContent = document.getElementById('log-content');
+
+    // Extract form data
+    const formData = new FormData(event.target);
+    const data = {
+        companyName: formData.get('companyName'),
+        userName: formData.get('userName'),
+        password: formData.get('password')
+    };
+
+    // Make the API call
+    fetch('http://localhost:4040/generateToken', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Display the response
+        const responseDiv = document.createElement('div');
+        responseDiv.className = 'apiResponse';
+        responseDiv.textContent = JSON.stringify(data, null, 2);
+        logContent.appendChild(responseDiv);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+  } 
+
 
   function generateTokenHandler() {
       console.log('Generate Token clicked');
