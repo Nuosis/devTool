@@ -182,6 +182,7 @@ function loadSettings() {
   }
 
   function handleFormSubmit(event) {
+    console.log('form submission clicked');
     event.preventDefault(); // Prevent the default form submission
 
     const logContent = document.getElementById('log-content');
@@ -189,10 +190,11 @@ function loadSettings() {
     // Extract form data
     const formData = new FormData(event.target);
     const data = {
-        companyName: formData.get('companyName'),
-        userName: formData.get('userName'),
+        company: formData.get('companyName'),
+        username: formData.get('userName'),
         password: formData.get('password')
     };
+    console.log(data);
 
     // Make the API call
     fetch('http://localhost:4040/generateToken', {
@@ -202,7 +204,10 @@ function loadSettings() {
         },
         body: JSON.stringify(data),
     })
-    .then(response => response.json())
+    .then(response => {
+      console.log('Raw response:', response); // Log the raw response object
+      return response.json(); // Convert response to JSON
+    })
     .then(data => {
         // Display the response
         const responseDiv = document.createElement('div');
