@@ -103,8 +103,49 @@ body {
   margin-bottom: 5px; /* Optional: adds a little space between each date */
   transition: background-color 0.3s; /* Smooth transition for hover effect */
 }
+
 .sidebarButton:hover {
   background-color: var(--sidebarButton-hv-color); 
+}
+
+.formInput {
+  font-family: 'Roboto', sans-serif;
+  font-size: large; /* Adjust as needed to make the text larger */
+  font-weight: 700;
+  display: block;
+  width: 75%;
+  border-radius: 20px;
+  border: none; /* No border for a modern look */
+  padding: 10px 15px;
+  margin-bottom: 10px; /* Adjust as needed for space between inputs */
+}
+
+.formButton {
+  font-family: 'Roboto', sans-serif;
+  font-size: medium;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-color);
+  border: none; /* No border for a modern look */
+  padding: 10px 15px;
+  width: 25%;
+  border-radius: 20px; /* Adjust the radius as needed for round corners */
+  background-color: var(--sidebarButton-bg-color);
+  cursor: pointer; /* Change cursor to pointer to indicate it's clickable */
+  margin-bottom: 75px; /* Optional: adds a little space between each date */
+  transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+.apiResponse {
+  font-family: 'Roboto', sans-serif;
+  font-size: Medium; /* Adjust as needed to make the text larger */
+  font-weight: 400;
+  display: block;
+  width: 75%;
+  border-radius: 20px;
+  border: none; /* No border for a modern look */
+  padding: 10px 15px;
+  margin-bottom: 10px; /* Adjust as needed for space between inputs */
 }
 
 .contentRow {

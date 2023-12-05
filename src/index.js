@@ -52,7 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
       });
   }
   
-
   fetchLogDates();
 });
 
@@ -136,52 +135,299 @@ function loadSettings() {
   // Define the handlers for the buttons
   function developerSettingsHandler() {
     console.log('Developer Settings clicked');
-
     // Clear the log-content div
     const logContent = document.getElementById('log-content');
     logContent.innerHTML = '';
 
     // Create the form element
     const form = document.createElement('form');
-    form.addEventListener('submit', handleFormSubmit);
-
-    // Create the company name input
-    const companyNameInput = document.createElement('input');
-    companyNameInput.type = 'text';
-    companyNameInput.name = 'companyName';
-    companyNameInput.placeholder = 'Company Name';
-    companyNameInput.required = true;
+    form.addEventListener('submit', handleDevSubmit);
 
     // Create the user name (email) input
     const userNameInput = document.createElement('input');
     userNameInput.type = 'text';
     userNameInput.name = 'userName';
-    userNameInput.placeholder = 'User Name';
+    userNameInput.className = 'formInput';
+    userNameInput.placeholder = 'Dev Name';
     userNameInput.required = true;
 
     // Create the password input
     const passwordInput = document.createElement('input');
     passwordInput.type = 'password';
     passwordInput.name = 'password';
+    passwordInput.className = 'formInput';
     passwordInput.placeholder = 'Password';
     passwordInput.required = true;
 
     // Create the submit button
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
-    submitButton.textContent = 'Generate Token';
+    submitButton.className = 'formButton';
+    submitButton.textContent = 'Log In';
 
     // Append inputs and button to the form
-    form.appendChild(companyNameInput);
     form.appendChild(userNameInput);
     form.appendChild(passwordInput);
     form.appendChild(submitButton);
 
     // Append the form to the log-content div
     logContent.appendChild(form);
+  } 
+
+  function handleDevSubmit(event) {
+    console.log('dev submission clicked');
+    event.preventDefault(); // Prevent the default form submission
+
+    const logContent = document.getElementById('log-content');
+
+    // Extract form data
+    const formData = new FormData(event.target);
+    const data = {
+        username: formData.get('userName'),
+        password: formData.get('password')
+    };
+    //console.log('formData: ',data);
+
+    // Make the API call
+    fetch('http://localhost:4040/dev', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (response.status !== 200) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json(); // Convert response to JSON
+    })
+    .then(data => {
+        // If response is OK, call developerHandler
+        developerHandler(data);
+    })
+    .catch(error => {
+        // Display error message
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = `Error: ${error.message}`;
+        errorDiv.className = 'apiError';
+        logContent.appendChild(errorDiv);
+
+        console.error('There was a problem with the fetch operation:', error);
+    });
   }
 
-  function handleFormSubmit(event) {
+  function developerHandler() {
+    console.log('Developer Settings clicked');
+    // Clear the log-content div
+    const logContent = document.getElementById('log-content');
+    logContent.innerHTML = '';
+
+    // Create the first form for company creation
+    const formCompany = document.createElement('form');
+    formCompany.addEventListener('submit', createCompanyHandler);
+
+    // Create the company name input for the first form
+    const companyNameInput1 = document.createElement('input');
+    companyNameInput1.type = 'text';
+    companyNameInput1.name = 'companyName';
+    companyNameInput1.className = 'formInput';
+    companyNameInput1.placeholder = 'Company Name';
+    companyNameInput1.required = true;
+
+    // Create the submit button for the first form
+    const companyButton = document.createElement('button');
+    companyButton.type = 'submit';
+    companyButton.className = 'formButton';
+    companyButton.textContent = 'Create Company';
+
+    // Append inputs and button to the first form
+    formCompany.appendChild(companyNameInput1);
+    formCompany.appendChild(companyButton);
+
+    // Create the second form for user creation
+    const formUser = document.createElement('form');
+    formUser.addEventListener('submit', createUserHandler);
+
+    // Create the company name input for the second form
+    const companyNameInput2 = document.createElement('input');
+    companyNameInput2.type = 'text';
+    companyNameInput2.name = 'companyName';
+    companyNameInput2.className = 'formInput';
+    companyNameInput2.placeholder = 'Company Name';
+
+    // Create the user name (email) input
+    const userNameInput = document.createElement('input');
+    userNameInput.type = 'text';
+    userNameInput.name = 'userName';
+    userNameInput.className = 'formInput';
+    userNameInput.placeholder = 'Dev Name';
+
+    // Create the password input
+    const passwordInput = document.createElement('input');
+    passwordInput.type = 'password';
+    passwordInput.name = 'password';
+    passwordInput.className = 'formInput';
+    passwordInput.placeholder = 'Password';
+
+    // Create the submit button for the second form
+    const userButton = document.createElement('button');
+    userButton.type = 'submit';
+    userButton.className = 'formButton';
+    userButton.textContent = 'Create User';
+
+    // Append inputs and button to the second form
+    formUser.appendChild(companyNameInput2);
+    formUser.appendChild(userNameInput);
+    formUser.appendChild(passwordInput);
+    formUser.appendChild(userButton);
+
+    // Append both forms to the log-content div
+    logContent.appendChild(formCompany);
+    logContent.appendChild(formUser);
+  }
+
+  // Ensure createCompanyHandler and createUserHandler functions are defined
+  async function createCompanyHandler(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    const logContent = document.getElementById('log-content');
+
+    // Extract form data
+    const formData = new FormData(event.target);
+    const data = {
+        company: formData.get('companyName'), // Use the 'name' attribute of the input field
+    };
+
+    try {
+        // Make the API call
+        const response = await fetch('http://localhost:4040/createCompany', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (response.status !== 200) {
+            throw new Error('Network response was not ok');
+        }
+
+        const responseData = await response.json(); // Convert response to JSON
+
+        // If response is OK, Display success
+        const responseDiv = document.createElement('div');
+        responseDiv.textContent = `Created: ${responseData.company}`;
+        responseDiv.className = 'apiResponse';
+        logContent.appendChild(responseDiv);
+    } catch (error) {
+        // Display error message
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = `Error: ${error.message}`;
+        errorDiv.className = 'apiError';
+        logContent.appendChild(errorDiv);
+
+        console.error('There was a problem with the fetch operation:', error);
+    }
+  } 
+
+  async function createUserHandler(event) {
+    event.preventDefault(); // Prevent the default form submission
+    console.log('Creating User...');
+
+    const logContent = document.getElementById('log-content');
+
+    // Extract form data
+    const formData = new FormData(event.target);
+    const data = {
+        company: formData.get('companyName'),
+        username: formData.get('userName'),
+        password: formData.get('password'),
+    };
+
+    try {
+        // Make the API call
+        const response = await fetch('http://localhost:4040/createUser', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (response.status !== 200) {
+            throw new Error('Network response was not ok');
+        }
+
+        const responseData = await response.json(); // Convert response to JSON
+
+        // If response is OK, Display success
+        const responseDiv = document.createElement('div');
+        responseDiv.textContent = `Created: ${responseData.username}`; // Assuming responseData contains a username field
+        responseDiv.className = 'apiResponse';
+        logContent.appendChild(responseDiv);
+    } catch (error) {
+        // Display error message
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = `Error: ${error.message}`;
+        errorDiv.className = 'apiError';
+        logContent.appendChild(errorDiv);
+
+        console.error('There was a problem with the fetch operation:', error);
+    }
+  }
+
+  function generateTokenHandler() {
+      console.log('Generate Token clicked');
+      // Clear the log-content div
+      const logContent = document.getElementById('log-content');
+      logContent.innerHTML = '';
+
+      // Create the form element
+      const form = document.createElement('form');
+      form.addEventListener('submit', handleFormSubmit);
+
+      // Create the company name input
+      const companyNameInput = document.createElement('input');
+      companyNameInput.type = 'text';
+      companyNameInput.name = 'companyName';
+      companyNameInput.className = 'formInput';
+      companyNameInput.placeholder = 'Company Name';
+      companyNameInput.required = true;
+
+      // Create the user name (email) input
+      const userNameInput = document.createElement('input');
+      userNameInput.type = 'text';
+      userNameInput.name = 'userName';
+      userNameInput.className = 'formInput';
+      userNameInput.placeholder = 'User Name';
+      userNameInput.required = true;
+
+      // Create the password input
+      const passwordInput = document.createElement('input');
+      passwordInput.type = 'password';
+      passwordInput.name = 'password';
+      passwordInput.className = 'formInput';
+      passwordInput.placeholder = 'Password';
+      passwordInput.required = true;
+
+      // Create the submit button
+      const submitButton = document.createElement('button');
+      submitButton.type = 'submit';
+      submitButton.className = 'formButton';
+      submitButton.textContent = 'Generate Token';
+
+      // Append inputs and button to the form
+      form.appendChild(companyNameInput);
+      form.appendChild(userNameInput);
+      form.appendChild(passwordInput);
+      form.appendChild(submitButton);
+
+      // Append the form to the log-content div
+      logContent.appendChild(form);
+  }
+
+  async function handleFormSubmit(event) {
     console.log('form submission clicked');
     event.preventDefault(); // Prevent the default form submission
 
@@ -194,37 +440,49 @@ function loadSettings() {
         username: formData.get('userName'),
         password: formData.get('password')
     };
-    console.log(data);
 
-    // Make the API call
-    fetch('http://localhost:4040/generateToken', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    })
-    .then(response => {
-      console.log('Raw response:', response); // Log the raw response object
-      return response.json(); // Convert response to JSON
-    })
-    .then(data => {
+    try {
+        // Make the API call
+        const response = await fetch('http://localhost:4040/generateToken', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (response.status !== 200) {
+            throw new Error('Network response was not ok');
+        }
+
+        const responseData = await response.json(); // Convert response to JSON
+
         // Display the response
         const responseDiv = document.createElement('div');
+        const responseMessage = JSON.stringify(responseData, null, 2);
+        console.log('Response JSON:', responseMessage);
+
+        // Check if the message property exists in the response data
+        if (responseData.message) {
+            console.log('Message:', responseData.message);
+            responseDiv.textContent = responseData.message;
+        } else {
+            responseDiv.textContent = responseMessage;
+        }
+
         responseDiv.className = 'apiResponse';
-        responseDiv.textContent = JSON.stringify(data, null, 2);
         logContent.appendChild(responseDiv);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
-  } 
+    } catch (error) {
+        // Display error message
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = `Error: ${error.message}`;
+        errorDiv.className = 'apiError';
+        logContent.appendChild(errorDiv);
 
-
-  function generateTokenHandler() {
-      console.log('Generate Token clicked');
-      // Implement the logic to generate a token
+        console.error('There was a problem with the fetch operation:', error);
+    }
   }
+
 }
 
 
