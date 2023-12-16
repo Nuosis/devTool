@@ -74,7 +74,7 @@ export function handleDevSubmit(event) {
     };
 
     console.log('state: ', state);
-    fetch(state.host + '/dev', {
+    fetch(state.host + '/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
