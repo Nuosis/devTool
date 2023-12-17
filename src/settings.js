@@ -2,6 +2,7 @@ import {setState, getState} from './state.js'
 
 const state = getState()
 
+//USERS
 async function getUsers() {
     console.log('getting company users');
 
@@ -39,7 +40,7 @@ function reloadSettings(users) {
     const devSettingsButton = createButton('Developer Settings', 'devSettings', 'sidebarButton', developerSettingsHandler);
     sidebar.appendChild(devSettingsButton);
 
-    const companySettingsButton = createButton(state.company, 'compSettingsBtn', 'sidebarButton.company', companySettingsHandler);
+    const companySettingsButton = createButton(state.company, 'compSettingsBtn', 'sidebarButton company', companySettingsHandler);
     sidebar.appendChild(companySettingsButton);
 
     if (users.length === 0) {
@@ -47,7 +48,7 @@ function reloadSettings(users) {
     } else {
         users.forEach(user => {
             try {
-                const userButton = createButton(user.username, null, 'sidebarButton', () => userSettingsHandler(user));
+                const userButton = createButton(user.username, null, 'sidebarButton user', () => userSettingsHandler(user));
                 userButton.dataset.userAccess = user.access;
                 sidebar.appendChild(userButton);
             } catch (error) {
@@ -73,9 +74,38 @@ function createNoUsersMessage() {
 }
 
 function companySettingsHandler() {
-    // header state.Company
-    // button lock access
-    // button summarize access
+    console.log('loading company setting');
+    // Clear the log-content div
+    const logContent = document.getElementById('log-content');
+    logContent.innerHTML = '';
+
+    // Header for state.Company
+    const header = document.createElement('h1');
+    header.className = 'apiResponse';
+    header.textContent = state.company;
+
+    // Button lock access
+    const lockButton = createButton('lock company', null, 'formButton', handleLockCompany);
+
+    // Button summarize access
+    const summarizeButton = createButton('summarize access', null, 'formButton', handleSummarizeAccess);
+
+    logContent.appendChild(header);
+    logContent.appendChild(lockButton);
+    logContent.appendChild(summarizeButton);
+}
+
+function handleLockCompany() {
+    // set the company to a locked state
+    // TODO: when locked api calls are refused
+    // TODO: visual indicator that company is locked
+
+}
+
+function handleSummarizeAccess() {
+    // summarize access type and counts for last month
+    // present to user
+
 }
 
 function userSettingsHandler(user) {
@@ -85,24 +115,100 @@ function userSettingsHandler(user) {
     logContent.innerHTML = '';
 
     // Create the user name header 
-    const userNameInput = document.createElement('input');
-    userNameInput.type = 'text';
-    userNameInput.name = 'userName';
-    userNameInput.className = 'formInput';
-    // make this uneditable
-    userNameInput.required = true;
-    userNameInput.value = user.username;
+    const userName = document.createElement('h1');
+    userName.className = 'apiResponse';
+    userName.textContent = user.username;
 
     // button to reset password
-    // button to send verification email
-    // button to lock user
-    // button to delete user
-    // button to get token (dev only) needed to create log access in user projects
+    const resetButton = createButton('reset password', null, 'formButton',  () => handlePasswordReset(user));
 
+    // button to send verification email
+    const verifyButton = createButton('resend verification email', null, 'formButton',  () => handleVerifyEmail(user));
+
+    // button to lock user
+    const lockButton = createButton('lock user', null, 'formButton',  () => handleLockUser(user));
+
+    // button to delete user
+    const deleteButton = createButton('delete user', null, 'formButton',  () => handleDeleteUser(user));
+
+    // button to get token (dev only) needed to create log access in user projects
+    const tokenButton = createButton('get user token', null, 'formButton', () => generateUserToken(user));
+
+    logContent.appendChild(userName);
+    logContent.appendChild(lockButton);
+    logContent.appendChild(deleteButton);
+    logContent.appendChild(resetButton);
+    logContent.appendChild(verifyButton);
+    logContent.appendChild(tokenButton);
+}
+
+function handlePasswordReset(user) {
+    // call endpoint to reset user password
+}
+
+function handleVerifyEmail(user) {
+    // call endpoint to send/resend verification email
 
 }
 
-// developer log in
+function handleLockUser(user) {
+    // call endpoint to lock user
+}
+
+function handleDeleteUser(user) {
+    // call endpoint to delete user
+
+}
+
+export async function generateUserToken(user) {
+    console.log('Generate Token clicked');
+
+    const logContent = document.getElementById('log-content');
+
+    fetch(state.host + '/user_token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + state.token
+        },
+        body: JSON.stringify({
+            'username': user.username,
+            'access': user.access
+        }),
+    })
+    .then( async response => {
+        if (!response.ok) {
+            const errorResponse = await response.json(); // Convert response to JSON
+            throw new Error(errorResponse.message);
+        }
+        const info = await response.json(); // Convert response to JSON
+        // Check if there is an existing responseDiv and remove it
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
+        const responseDiv = document.createElement('div');
+        responseDiv.innerHTML = info.message + '<br>' + info.token; // Using innerHTML to include HTML line break
+        responseDiv.className = 'apiResponse';
+        logContent.appendChild(responseDiv);
+    })
+    .catch(error => {
+        // Display error message
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = `Error: ${error.message}`; // Display the message from the server
+        errorDiv.className = 'apiResponse';
+        logContent.appendChild(errorDiv);
+
+        console.error('There was a problem with the fetch operation:', error.message);
+    });
+
+}
+
+// DEVELOPER log in
 export function developerSettingsHandler() {
     // console.log('state: ', state)
     if (!state.devCredentials.username) {
@@ -122,6 +228,12 @@ export function developerSettingsHandler() {
         companyNameInput.className = 'formInput';
         companyNameInput.placeholder = 'Company Name';
         companyNameInput.required = true;
+
+        // pre-populate companyName if saved
+        const savedCompanyName = localStorage.getItem("companyName");
+        if (savedCompanyName) {
+            companyNameInput.value = savedCompanyName;
+        }
 
         // Create the user name (email) input
         const userNameInput = document.createElement('input');
@@ -173,6 +285,9 @@ export function handleDevSubmit(event) {
         password: formData.get('password'),
         company: formData.get('companyName')
     };
+    
+    // store users input company name for next login
+    localStorage.setItem("companyName", companyName);
 
     fetch(state.host + '/login', {
         method: 'POST',
@@ -270,6 +385,9 @@ export function devFunctionsHandler() {
             // Handle errors, such as by displaying a message to the user
         });
 
+        const spacer = document.createElement('div');
+        spacer.style.height = '30px';
+
         // Create the second form for user creation
         const formUser = document.createElement('form');
         formUser.addEventListener('submit', createUserHandler);
@@ -333,6 +451,7 @@ export function devFunctionsHandler() {
         formUser.appendChild(userButton);
 
         // Append formUser to the log-content div
+        logContent.appendChild(spacer);
         logContent.appendChild(formUser);
     }
 }
@@ -451,56 +570,6 @@ export async function createUserHandler(event) {
     }
 }
 
-export function generateTokenHandler() {
-    console.log('Generate Token clicked');
-    // Clear the log-content div
-    const logContent = document.getElementById('log-content');
-    logContent.innerHTML = '';
-
-    // Create the form element
-    const form = document.createElement('form');
-    form.addEventListener('submit', handleFormSubmit);
-
-    // Create the company name input
-    const companyNameInput = document.createElement('input');
-    companyNameInput.type = 'text';
-    companyNameInput.name = 'companyName';
-    companyNameInput.className = 'formInput';
-    companyNameInput.placeholder = 'Company Name';
-    companyNameInput.required = true;
-
-    // Create the user name (email) input
-    const userNameInput = document.createElement('input');
-    userNameInput.type = 'text';
-    userNameInput.name = 'userName';
-    userNameInput.className = 'formInput';
-    userNameInput.placeholder = 'User Name';
-    userNameInput.required = true;
-
-    // Create the password input
-    const passwordInput = document.createElement('input');
-    passwordInput.type = 'password';
-    passwordInput.name = 'password';
-    passwordInput.className = 'formInput';
-    passwordInput.placeholder = 'Password';
-    passwordInput.required = true;
-
-    // Create the submit button
-    const submitButton = document.createElement('button');
-    submitButton.type = 'submit';
-    submitButton.className = 'formButton';
-    submitButton.textContent = 'Generate Token';
-
-    // Append inputs and button to the form
-    form.appendChild(companyNameInput);
-    form.appendChild(userNameInput);
-    form.appendChild(passwordInput);
-    form.appendChild(submitButton);
-
-    // Append the form to the log-content div
-    logContent.appendChild(form);
-}
-
 export async function handleFormSubmit(event) {
     console.log('form submission clicked');
     event.preventDefault(); // Prevent the default form submission
@@ -557,6 +626,8 @@ export async function handleFormSubmit(event) {
     }
 }
 
+
+// INIT FUNCTIONS
 export function loadSettings() {
     // Clear out the current elements in the sidebar and main divs
     const sidebar = document.getElementById('sidebar');
@@ -571,14 +642,6 @@ export function loadSettings() {
     devSettingsButton.className = 'sidebarButton';
     devSettingsButton.addEventListener('click', developerSettingsHandler);
     sidebar.appendChild(devSettingsButton);
-
-    // // Create the "Generate Token" button
-    // const generateTokenButton = document.createElement('button');
-    // generateTokenButton.textContent = 'Generate Token';
-    // generateTokenButton.id = 'generateToken';
-    // generateTokenButton.className = 'sidebarButton';
-    // generateTokenButton.addEventListener('click', generateTokenHandler);
-    // sidebar.appendChild(generateTokenButton);
 
     developerSettingsHandler()
 }

@@ -4,6 +4,10 @@
   --sidebar-bg-color: #f5f5f5;
   --sidebarButton-bg-color: #7AA7D2;
   --sidebarButton-hv-color: #6891B8;
+  --sidebarButtonCo-bg-color: #d2d27a;
+  --sidebarButtonCo-hv-color: #b8b868;
+  --sidebarButtonUser-bg-color: #af9eb0;
+  --sidebarButtonUser-hv-color: #a38ea4;
   --log-entry-bg-color: #ffffff;
   --iconbar-bg-color: #D0E8FF; /* Light theme iconbar background */
 }
@@ -15,6 +19,10 @@
     --sidebar-bg-color: #242424;
     --sidebarButton-bg-color: #4178A0;
     --sidebarButton-hv-color: #2E5A8D;
+    --sidebarButtonCo-bg-color: #aeae3b;
+    --sidebarButtonCo-hv-color: #b8b868;
+    --sidebarButtonUser-bg-color: #8d748e;
+    --sidebarButtonUser-hv-color: #786279;
     --log-entry-bg-color: #1e1e1e;
     --iconbar-bg-color: #162238; /* Dark theme iconbar background */
   }
@@ -65,16 +73,6 @@ body {
   overflow-y: auto;
 }
 
-#log-content {
-  font-family: 'Roboto', sans-serif;
-  font-size: small;
-  width: 80%;
-  padding: 20px;
-  background-color: var(--sidebar-bg-color);
-  height: 100vh;
-  overflow-y: auto;
-}
-
 .sidebarDate {
   font-family: 'Roboto', sans-serif;
   font-size: small;
@@ -93,19 +91,48 @@ body {
   font-size: small;
   text-align: center;
   color: var(--text-color);
-  border: none; /* No border for a modern look */
+  border: none;
   padding: 10px 15px;
-  padding-right: 15px;
   width: 100%;
-  border-radius: 5px; /* Adjust the radius as needed for round corners */
+  border-radius: 5px;
   background-color: var(--sidebarButton-bg-color);
-  cursor: pointer; /* Change cursor to pointer to indicate it's clickable */
-  margin-bottom: 5px; /* Optional: adds a little space between each date */
-  transition: background-color 0.3s; /* Smooth transition for hover effect */
+  cursor: pointer;
+  margin-bottom: 5px;
+  transition: background-color 0.3s;
 }
 
 .sidebarButton:hover {
   background-color: var(--sidebarButton-hv-color); 
+}
+
+.sidebarButton.company {
+  background-color: var(--sidebarButtonCo-bg-color);
+}
+
+.sidebarButton.company:hover {
+  background-color: var(--sidebarButtonCo-hv-color); 
+}
+
+.sidebarButton.user {
+  background-color: var(--sidebarButtonUser-bg-color);
+}
+
+.sidebarButton.user:hover {
+  background-color: var(--sidebarButtonUser-hv-color); 
+}
+
+
+
+
+
+#log-content {
+  font-family: 'Roboto', sans-serif;
+  font-size: small;
+  width: 80%;
+  padding: 20px;
+  background-color: var(--sidebar-bg-color);
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .formInput {
@@ -145,8 +172,13 @@ body {
   border-radius: 20px; /* Adjust the radius as needed for round corners */
   background-color: var(--sidebarButton-bg-color);
   cursor: pointer; /* Change cursor to pointer to indicate it's clickable */
-  margin-bottom: 75px; /* Optional: adds a little space between each date */
+  margin-bottom: 10px; /* Optional: adds a little space between each element */
+  margin-right: 10px; /* Optional: adds a little space between each element */
   transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+.formSpacer {
+  margin-bottom: 30px; /* Optional: adds a little space between each element */
 }
 
 .apiResponse {

@@ -4,6 +4,7 @@ import {setState, getState} from './state.js'
 const state = getState()
 
 function fetchLogDates() {
+  console.log('fetchLogDates')
   const logContent = document.getElementById('log-content');
   logContent.innerHTML = ''; // Clear the log content
   const sidebar = document.getElementById('sidebar');
@@ -21,8 +22,10 @@ function fetchLogDates() {
 
 // This function fetches log dates and updates the state and UI
 function getLogDates() {
-  // Fetch log dates
-  console.log("fetch dates");
+  console.log("getLogDates");
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = ''; // Clear the sidebar
+
   const endpoint = state.host + '/log';
   const headers = {
     'Authorization': `Bearer ${state.token}` // Use actual token
@@ -48,6 +51,7 @@ function getLogDates() {
 
 // This function renders log dates from state to the sidebar
 function renderLogDates() {
+  console.log('renderLogDates')
   // Create a new Set to store unique dates from state.logDates
   const uniqueDates = new Set(state.logDates);
 
@@ -73,6 +77,7 @@ function renderLogDates() {
 
 // This function will fetch and render the log details for a selected date
 function fetchLogDetails(date) {
+  console.log('fetchLogDateDetails')
   // Parse the date string and format it into YYYY-MM-DD
   const dateObj = new Date(date);
   const formattedDate = dateObj.toISOString().split('T')[0]; // Converts to '2023-11-28' format
@@ -89,7 +94,7 @@ function fetchLogDetails(date) {
   console.log('endPoint:', endpoint )
 
   const headers = {
-    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlLZXkiOiJlMThhMmZlNTVmMDg1ZDI2M2I0MDk1ZGI1MjljY2IxZmVhZDc3OTRlNjJkOWY5MTJjMWYzYTdhNWZkODk2OTg5IiwiaWF0IjoxNzAwOTMzMDM0fQ.ioRoID-SoWKgXyaoqjkx6mHTaRt9IgQ1RErKCvc9_Bs'
+    'Authorization': `Bearer ${state.token}`
   };
 
   // Perform the fetch request with the Authorization header
@@ -126,7 +131,7 @@ function fetchLogDetails(date) {
 }
 
 // Event listener for DOMContentLoaded
-document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('logIcon').addEventListener('click', fetchLogDates);
   document.getElementById('settingsIcon').addEventListener('click', loadSettings);
 
