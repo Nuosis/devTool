@@ -2,9 +2,9 @@ import {setState, getState} from './state.js'
 
 const state = getState()
 
-// Define the handlers for the buttons
+// developer log in
 export function developerSettingsHandler() {
-    console.log('state: ', state)
+    // console.log('state: ', state)
     if (!state.devCredentials.username) {
         console.log('Developer Settings clicked');
         // Clear the log-content div
@@ -54,11 +54,10 @@ export function developerSettingsHandler() {
         // Append the form to the log-content div
         logContent.appendChild(form);
     } else {
-        // If state.devCredentials is not null, run companyHandler
-        companyHandler();
+        // If state.devCredentials is not null, run devFunctionsHandler
+        devFunctionsHandler();
     }
 } 
-
 export function handleDevSubmit(event) {
     console.log('dev submission clicked');
     event.preventDefault(); // Prevent the default form submission
@@ -73,7 +72,6 @@ export function handleDevSubmit(event) {
         company: formData.get('companyName')
     };
 
-    console.log('state: ', state);
     fetch(state.host + '/login', {
         method: 'POST',
         headers: {
@@ -99,7 +97,7 @@ export function handleDevSubmit(event) {
         }
         setState('devCredentials', 'Replace', {username: requestData.username, password: requestData.password})
         // Call developerHandler with the response data
-        companyHandler(responseData);
+        devFunctionsHandler(responseData);
     })
     .catch(error => {
         // Display error message
@@ -110,17 +108,21 @@ export function handleDevSubmit(event) {
 
         console.error('There was a problem with the fetch operation:', error);
     });
+    console.log('state: ', state);
 }
-
-export function companyHandler() {
-    console.log('company handler');
+//on success loads developer functions
+//
+//
+// forms to display developer functions
+export function devFunctionsHandler() {
+    console.log('dev functions handler');
     // Clear the log-content div
     const logContent = document.getElementById('log-content');
     logContent.innerHTML = '';
 
-    // Create the first form for company creation
+    // Create the first form for company creation/change state
     const formCompany = document.createElement('form');
-    formCompany.addEventListener('submit', updateCompanyHandler);
+    formCompany.addEventListener('submit', updateDevFunctionsHandler);
 
     // Create the company name input for the first form
     const companyNameInput1 = document.createElement('input');
@@ -139,7 +141,7 @@ export function companyHandler() {
     const companyButton = document.createElement('button');
     companyButton.type = 'submit';
     companyButton.className = 'formButton';
-    companyButton.textContent = state.company ? 'Update Company' : 'Create Company';
+    companyButton.textContent = state.company ? 'Switch Company' : 'Create Company';
 
     // Append inputs and button to the first form
     formCompany.appendChild(companyNameInput1);
@@ -148,7 +150,7 @@ export function companyHandler() {
     // Append formCompany to the log-content div
     logContent.appendChild(formCompany);
 
-    // Append formUser only if company does not exist in state
+    // Append formUser only if company exists in state
     if (state.company && state.company.length > 0) {
         // Create the second form for user creation
         const formUser = document.createElement('form');
@@ -160,7 +162,7 @@ export function companyHandler() {
         companyNameInput2.name = 'companyName';
         companyNameInput2.className = 'formInput';
         companyNameInput2.placeholder = 'Company Name';
-        companyNameInput1.value = state.company;
+        companyNameInput2.value = state.company;
 
         // Create the user name (email) input
         const userNameInput = document.createElement('input');
@@ -176,6 +178,29 @@ export function companyHandler() {
         passwordInput.className = 'formInput';
         passwordInput.placeholder = 'Password';
 
+        // Create the access level dropdown
+        const accessLevelSelect = document.createElement('select');
+        accessLevelSelect.name = 'accessLevel';
+        accessLevelSelect.className = 'formSelect';
+
+            // Option for standard access
+            const standardOption = document.createElement('option');
+            standardOption.value = 'standard';
+            standardOption.textContent = 'Standard';
+            accessLevelSelect.appendChild(standardOption);
+
+            // Option for admin access
+            const adminOption = document.createElement('option');
+            adminOption.value = 'admin';
+            adminOption.textContent = 'Admin';
+            accessLevelSelect.appendChild(adminOption);
+
+            // Option for dev access
+            const devOption = document.createElement('option');
+            devOption.value = 'dev';
+            devOption.textContent = 'Dev';
+            accessLevelSelect.appendChild(devOption);
+
         // Create the submit button for the second form
         const userButton = document.createElement('button');
         userButton.type = 'submit';
@@ -186,6 +211,7 @@ export function companyHandler() {
         formUser.appendChild(companyNameInput2);
         formUser.appendChild(userNameInput);
         formUser.appendChild(passwordInput);
+        formUser.appendChild(accessLevelSelect);
         formUser.appendChild(userButton);
 
         // Append formUser to the log-content div
@@ -194,14 +220,13 @@ export function companyHandler() {
 }
 
 // submit company form. 
-export async function updateCompanyHandler(event) {
+export async function updateDevFunctionsHandler(event) {
     console.log("create/update company was clicked")
     event.preventDefault(); // Prevent the default form submission
 
     const logContent = document.getElementById('log-content');
 
     // Extract form data
-    
     console.log("state: ", state)
     const formData = new FormData(event.target);
     const data = {
@@ -209,9 +234,7 @@ export async function updateCompanyHandler(event) {
         DEVun: state.devCredentials.username,
         DEVpw: state.devCredentials.password,
     };
-
-    
-    console.log("createData: ", data)
+    console.log("company create/update Data: ", data)
 
     fetch(state.host + '/createCompany', {
         method: 'POST',
@@ -228,11 +251,10 @@ export async function updateCompanyHandler(event) {
     })
     .then(responseData => {
         // Set company and token into state
-        setState('token', 'Replace', responseData.token);
         setState('company', 'Replace', data.company);
     
-        // Run companyHandler (assuming it's defined and handles the response data)
-        companyHandler(responseData);
+        // Run devFunctionsHandler (assuming it's defined and handles the response data)
+        devFunctionsHandler(responseData);
     })
     .catch(error => {
         // Display error message
@@ -254,9 +276,12 @@ export async function createUserHandler(event) {
     // Extract form data
     const formData = new FormData(event.target);
     const data = {
-        company: formData.get('companyName'),
-        username: formData.get('userName'),
-        password: formData.get('password'),
+        company: formData.get('companyName'), //needs apiKey not company name
+        username: state.devCredentials.username,
+        password: state.devCredentials.password,
+        newUsername: formData.get('userName'),
+        newPassword: formData.get('password'),
+        accessLevel: formData.get('accessLevel'),
     };
 
     try {

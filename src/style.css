@@ -120,6 +120,19 @@ body {
   margin-bottom: 10px; /* Adjust as needed for space between inputs */
 }
 
+.formSelect {
+  font-family: 'Roboto', sans-serif;
+  font-size: large; /* Adjust as needed to make the text larger */
+  font-weight: 700;
+  text-align: right;
+  display: block;
+  width: 25%;
+  border-radius: 20px;
+  border: none; /* No border for a modern look */
+  padding: 10px 15px;
+  margin-bottom: 10px; /* Adjust as needed for space between inputs */
+}
+
 .formButton {
   font-family: 'Roboto', sans-serif;
   font-size: medium;
