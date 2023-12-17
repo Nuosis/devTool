@@ -2,6 +2,106 @@ import {setState, getState} from './state.js'
 
 const state = getState()
 
+async function getUsers() {
+    console.log('getting company users');
+
+    try {
+        const response = await fetch(state.host + '/companyUsers', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + state.token
+            },
+        });
+
+        if (!response.ok) {
+            // If the response is not okay, parse it as JSON to get the error message
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.message || `HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json(); // Convert response to JSON
+        //console.log('Users retrieved successfully:', data.userArray);
+        reloadSettings(data.userArray); // Call reloadSettings with the retrieved data
+    } catch (error) {
+        console.error('There was a problem with the fetch operation:', error.message);
+        // Handle errors, such as by displaying a message to the user
+    }
+}
+
+function reloadSettings(users) {
+    console.log('reload called')
+    // console.log('users:', users);
+
+    const sidebar = document.getElementById('sidebar');
+    sidebar.innerHTML = '';
+
+    const devSettingsButton = createButton('Developer Settings', 'devSettings', 'sidebarButton', developerSettingsHandler);
+    sidebar.appendChild(devSettingsButton);
+
+    const companySettingsButton = createButton(state.company, 'compSettingsBtn', 'sidebarButton.company', companySettingsHandler);
+    sidebar.appendChild(companySettingsButton);
+
+    if (users.length === 0) {
+        sidebar.appendChild(createNoUsersMessage());
+    } else {
+        users.forEach(user => {
+            try {
+                const userButton = createButton(user.username, null, 'sidebarButton', () => userSettingsHandler(user));
+                userButton.dataset.userAccess = user.access;
+                sidebar.appendChild(userButton);
+            } catch (error) {
+                console.error('Error creating button for user:', user, error);
+            }
+        });
+    }
+}
+
+function createButton(text, id, className, eventHandler) {
+    const button = document.createElement('button');
+    button.textContent = text;
+    if (id) button.id = id;
+    button.className = className;
+    button.addEventListener('click', eventHandler);
+    return button;
+}
+
+function createNoUsersMessage() {
+    const message = document.createElement('p');
+    message.textContent = 'No users available';
+    return message;
+}
+
+function companySettingsHandler() {
+    // header state.Company
+    // button lock access
+    // button summarize access
+}
+
+function userSettingsHandler(user) {
+    console.log('User Settings clicked');
+    // Clear the log-content div
+    const logContent = document.getElementById('log-content');
+    logContent.innerHTML = '';
+
+    // Create the user name header 
+    const userNameInput = document.createElement('input');
+    userNameInput.type = 'text';
+    userNameInput.name = 'userName';
+    userNameInput.className = 'formInput';
+    // make this uneditable
+    userNameInput.required = true;
+    userNameInput.value = user.username;
+
+    // button to reset password
+    // button to send verification email
+    // button to lock user
+    // button to delete user
+    // button to get token (dev only) needed to create log access in user projects
+
+
+}
+
 // developer log in
 export function developerSettingsHandler() {
     // console.log('state: ', state)
@@ -58,6 +158,7 @@ export function developerSettingsHandler() {
         devFunctionsHandler();
     }
 } 
+
 export function handleDevSubmit(event) {
     console.log('dev submission clicked');
     event.preventDefault(); // Prevent the default form submission
@@ -66,6 +167,7 @@ export function handleDevSubmit(event) {
 
     // Extract form data
     const formData = new FormData(event.target);
+    const companyName = formData.get('companyName');
     const requestData = {
         username: formData.get('userName'),
         password: formData.get('password'),
@@ -86,27 +188,35 @@ export function handleDevSubmit(event) {
         return response.json(); // Convert response to JSON
     })
     .then(responseData => {
+        console.log('response data: ', responseData)
         // Check if the response has a token
         if (responseData.token) {
             setState('token', 'Replace', responseData.token);
         }
 
         // Check if the response has a company and it's not null
-        if (responseData.company != null) {
-            setState('company', 'Replace', responseData.company);
+        if (responseData.apiKey != null) {
+            setState('company', 'Replace', companyName);
+            setState('apiKey', 'Replace', responseData.apiKey);
         }
         setState('devCredentials', 'Replace', {username: requestData.username, password: requestData.password})
+
         // Call developerHandler with the response data
-        devFunctionsHandler(responseData);
+        devFunctionsHandler();
     })
     .catch(error => {
-        // Display error message
+        // Display error message 
+        // Check if there is an existing responseDiv and remove it
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
         const errorDiv = document.createElement('div');
         errorDiv.textContent = `Error: ${error.message}`;
-        errorDiv.className = 'apiError';
+        errorDiv.className = 'apiResponse';
         logContent.appendChild(errorDiv);
 
-        console.error('There was a problem with the fetch operation:', error);
+        console.error('There was a problem with the fetch operation:', error.message);
     });
     console.log('state: ', state);
 }
@@ -152,6 +262,14 @@ export function devFunctionsHandler() {
 
     // Append formUser only if company exists in state
     if (state.company && state.company.length > 0) {
+        // get the users of this company// Call getUsers to retrieve and display the users
+        getUsers().then(() => {
+            console.log('Users fetched and displayed.');
+        }).catch(error => {
+            console.error('Error fetching users:', error.message);
+            // Handle errors, such as by displaying a message to the user
+        });
+
         // Create the second form for user creation
         const formUser = document.createElement('form');
         formUser.addEventListener('submit', createUserHandler);
@@ -252,6 +370,7 @@ export async function updateDevFunctionsHandler(event) {
     .then(responseData => {
         // Set company and token into state
         setState('company', 'Replace', data.company);
+        setState('apiKey', 'Replace', data.apiKey);
     
         // Run devFunctionsHandler (assuming it's defined and handles the response data)
         devFunctionsHandler(responseData);
@@ -276,10 +395,10 @@ export async function createUserHandler(event) {
     // Extract form data
     const formData = new FormData(event.target);
     const data = {
-        company: formData.get('companyName'), //needs apiKey not company name
+        apiKey: state.apiKey, //needs apiKey not company name
         username: state.devCredentials.username,
         password: state.devCredentials.password,
-        newUsername: formData.get('userName'),
+        newUserName: formData.get('userName'),
         newPassword: formData.get('password'),
         accessLevel: formData.get('accessLevel'),
     };
@@ -293,23 +412,39 @@ export async function createUserHandler(event) {
             },
             body: JSON.stringify(data),
         });
-
-        if (response.status !== 200) {
-            throw new Error('Network response was not ok');
+        console.log(response)
+        if (!response.ok) { // Check for response.ok instead of a specific status
+            // Try to parse the error response body to get the error message
+            const errorResponse = await response.json(); // Assumes the server responds with JSON-formatted error
+            throw new Error(errorResponse.message || 'Unknown error occurred');
         }
 
         const responseData = await response.json(); // Convert response to JSON
 
         // If response is OK, Display success
+        // Check if there is an existing responseDiv and remove it
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
+
+        // Create a new responseDiv
         const responseDiv = document.createElement('div');
-        responseDiv.textContent = `Created: ${responseData.username}`; // Assuming responseData contains a username field
+        responseDiv.textContent = `Created: ${responseData.message}`; // Assuming responseData contains a message field
         responseDiv.className = 'apiResponse';
         logContent.appendChild(responseDiv);
     } catch (error) {
         // Display error message
+        // Check if there is an existing responseDiv and remove it
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
+
+        // Create a new responseDiv
         const errorDiv = document.createElement('div');
-        errorDiv.textContent = `Error: ${error.message}`;
-        errorDiv.className = 'apiError';
+        errorDiv.textContent = `Error: ${error.message || error}`;
+        errorDiv.className = 'apiResponse';
         logContent.appendChild(errorDiv);
 
         console.error('There was a problem with the fetch operation:', error);

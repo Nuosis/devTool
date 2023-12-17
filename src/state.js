@@ -5,6 +5,7 @@ let appState = {
     devCredentials: {},
     token: "",
     company: "",
+    apiKey: "",
 };
 
 export function setState(stateVar, stateMethod, value) {
