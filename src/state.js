@@ -1,5 +1,5 @@
 let appState = {
-    host: "http://localhost:4040",
+    host: "https://server.selectjanitorial.com:4343",
     logDates: [],
     logDetails: {},
     devCredentials: {},
