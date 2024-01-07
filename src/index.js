@@ -2,6 +2,7 @@ import { developerSettingsHandler,handleDevSubmit,developerHandler,companyHandle
 import {setState, getState} from './state.js'
 
 const state = getState()
+console.log(state)
 
 function fetchLogDates() {
   console.log('fetchLogDates')

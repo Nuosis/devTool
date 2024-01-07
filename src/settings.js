@@ -330,7 +330,6 @@ export function handleDevSubmit(event) {
         errorDiv.textContent = `Error: ${error.message}`;
         errorDiv.className = 'apiResponse';
         logContent.appendChild(errorDiv);
-
         console.error('There was a problem with the fetch operation:', error.message);
     });
     console.log('state: ', state);
