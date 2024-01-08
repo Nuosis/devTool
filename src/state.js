@@ -1,5 +1,5 @@
 let appState = {
-    host: "http://184.71.24.34:4040",
+    host: "https://server.claritybusinesssolutions.ca:4343",//"https://server.selectjanitorial.com:4343", //"http://184.71.24.34:4040",
     logDates: [],
     logDetails: {},
     devCredentials: {},
