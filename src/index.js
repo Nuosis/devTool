@@ -116,6 +116,10 @@ function fetchLogDetails(date) {
         throw new Error('Data format error: Expected an array of log entries');
       }
 
+      // Sort logEntries in descending order based on the 'created' field
+      logEntries.sort((a, b) => new Date(b.created) - new Date(a.created));
+      console.log('sorted log:', logEntries)
+
       // If 'logEntries' is an array, proceed to populate the log details
       logEntries.forEach(entry => {
         //console.log('Processing log entry:', entry); // Log the current log entry being processed
