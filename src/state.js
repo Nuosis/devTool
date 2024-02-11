@@ -2,10 +2,19 @@ let appState = {
     host: "https://server.claritybusinesssolutions.ca:4343",//"https://server.selectjanitorial.com:4343", //"http://184.71.24.34:4040",
     logDates: [],
     logDetails: {},
-    devCredentials: {},
+    accessLevel: "",
+    userName: "",
+    password: "",
+    isDev: false,
+    isAdmin: false,
     token: "",
     company: "",
     apiKey: "",
+    projects: [],
+    projectDetails: {},
+    projectTasks: [],
+    projectActive: [],
+    projectComplete: [],
 };
 
 export function setState(stateVar, stateMethod, value) {

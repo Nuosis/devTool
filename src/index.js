@@ -1,145 +1,171 @@
-import { developerSettingsHandler,handleDevSubmit,developerHandler,companyHandler,createUserHandler,generateTokenHandler, handleFormSubmit, loadSettings } from './settings.js';
 import {setState, getState} from './state.js'
+import {devSettingsHandler, userSettingsHandler} from './settings.js'
+import {createLogIcon} from './log.js'
 
 const state = getState()
-console.log(state)
 
-function fetchLogDates() {
-  console.log('fetchLogDates')
+export function createButton(text, id, className, eventHandler) {
+  const button = document.createElement('button');
+  button.textContent = text;
+  if (id) button.id = id;
+  button.className = className;
+  button.addEventListener('click', eventHandler);
+  return button;
+}
+
+function initSettings() {
+  // Clear out the current elements in the sidebar and main divs
+  const sidebar = document.getElementById('sidebar');
   const logContent = document.getElementById('log-content');
-  logContent.innerHTML = ''; // Clear the log content
-  const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = ''; // Clear the sidebar
 
+  // Create the "Log In" button
+  const devSettingsButton = document.createElement('button');
+  devSettingsButton.textContent = 'Log In';
+  devSettingsButton.id = 'loginButton';
+  devSettingsButton.className = 'sidebarButton';
+  devSettingsButton.addEventListener('click', loadSettings);
+  sidebar.appendChild(devSettingsButton);
 
-  // If logDates in state is not empty, use it instead of fetching
-  if (state.logDates.length > 0) {
-    renderLogDates();
-    return;
-  }
-  // Proceed to fetch log dates if state.logDates is empty
-  getLogDates()
+  //init the log in form
+  const form = document.createElement('form');
+  form.addEventListener('submit', handleLogInSubmit);
+
+  // Create the user name (email) input
+  const userNameInput = document.createElement('input');
+  userNameInput.type = 'text';
+  userNameInput.name = 'userName';
+  userNameInput.className = 'formInput';
+  userNameInput.placeholder = 'User Name';
+  userNameInput.required = true;
+
+  // Create the password input
+  const passwordInput = document.createElement('input');
+  passwordInput.type = 'password';
+  passwordInput.name = 'password';
+  passwordInput.className = 'formInput';
+  passwordInput.placeholder = 'Password';
+  passwordInput.required = true;
+
+  // Create the submit button
+  const submitButton = document.createElement('button');
+  submitButton.type = 'submit';
+  submitButton.className = 'formButton';
+  submitButton.textContent = 'Log In';
+
+  // Append inputs and button to the form
+  // form.appendChild(companyNameInput);
+  form.appendChild(userNameInput);
+  form.appendChild(passwordInput);
+  form.appendChild(submitButton);
+
+  // Append the form to the log-content div
+  logContent.appendChild(form);
 }
 
-// This function fetches log dates and updates the state and UI
-function getLogDates() {
-  console.log("getLogDates");
-  const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = ''; // Clear the sidebar
+function handleLogInSubmit(event) {
+  console.log('login submission clicked');
+  event.preventDefault(); // Prevent the default form submission
 
-  const endpoint = state.host + '/log';
-  const headers = {
-    'Authorization': `Bearer ${state.token}` // Use actual token
+  const logContent = document.getElementById('log-content');
+
+  // Extract form data
+  const formData = new FormData(event.target);
+  const requestData = {
+      username: formData.get('userName'),
+      password: formData.get('password')
   };
-  console.log("call data: ", {endpoint, headers});
 
-  fetch(endpoint, { headers: headers })
-    .then(response => {
+  setState('userName', 'Replace', requestData.username);
+  setState('password', 'Replace', requestData.password);
+
+  fetch(state.host + '/login', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+  })
+  .then(response => {
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return response.json();
-    })
-    .then(dates => {
-      // Update state with the fetched dates
-      state.logDates = dates.map(dateObj => new Date(dateObj.created).toDateString());
-      renderLogDates();
-    })
-    .catch(error => {
-      console.error('Error fetching log dates:', error);
-    });
-}
+      return response.json(); // Convert response to JSON
+  })
+  .then(responseData => {
+      console.log('response data: ', responseData)
+      // Check if the response has a token
+      if (responseData.token) {
+          setState('token', 'Replace', responseData.token);
+      }
 
-// This function renders log dates from state to the sidebar
-function renderLogDates() {
-  console.log('renderLogDates')
-  // Create a new Set to store unique dates from state.logDates
-  const uniqueDates = new Set(state.logDates);
+      // Check if the response has a company and it's not null
+      if (responseData.apiKey != null) {
+          // setState('company', 'Replace', companyName);
+          setState('apiKey', 'Replace', responseData.apiKey);
+      }
+      const accessLevel = responseData.userAccess;
+      const isDev = accessLevel==="dev";
+      const isAdmin = isDev || accessLevel === "admin";
+      const userRest = responseData.userReset;
 
-  // Convert the Set to an array and sort it in descending order
-  const sortedUniqueDates = Array.from(uniqueDates).sort((a, b) => new Date(b) - new Date(a));
+      setState('isDev', 'Replace', isDev);
+      setState('isAdmin', 'Replace', isAdmin);
+      setState('accessLevel', 'Replace', accessLevel);
 
-  // Create sidebar elements for each unique date
-  sortedUniqueDates.forEach(uniqueDate => {
-    const dateElement = document.createElement('div');
-    dateElement.textContent = uniqueDate;
-    dateElement.className = 'sidebarDate';
-    dateElement.addEventListener('click', () => fetchLogDetails(uniqueDate));
-    sidebar.appendChild(dateElement);
+      if (responseData.company != null) {
+        setState('company', 'Replace', responseData.company)
+      }
+
+      console.log('login state: ', state); 
+      // reveil the log icon 
+      createLogIcon();
+      // load settings 
+      loadSettings()
+     
+  })
+  .catch(error => {
+      // Display error message 
+      // Check if there is an existing responseDiv and remove it
+      const existingResponseDiv = logContent.querySelector('.apiResponse');
+      if (existingResponseDiv) {
+          logContent.removeChild(existingResponseDiv);
+      }
+      const errorDiv = document.createElement('div');
+      errorDiv.textContent = `Error: ${error.message}`;
+      errorDiv.className = 'apiResponse';
+      logContent.appendChild(errorDiv);
+      console.error('There was a problem with the fetch operation:', error.message);
   });
-
-  // Create and append the refresh button
-    const refreshButton = document.createElement('button');
-    refreshButton.textContent = 'Refresh Log Dates';
-    refreshButton.className = 'sidebarButton';
-    refreshButton.addEventListener('click', getLogDates);
-    sidebar.appendChild(refreshButton);
 }
 
-// This function will fetch and render the log details for a selected date
-function fetchLogDetails(date) {
-  console.log('fetchLogDateDetails')
-  // Parse the date string and format it into YYYY-MM-DD
-  const dateObj = new Date(date);
-  const formattedDate = dateObj.toISOString().split('T')[0]; // Converts to '2023-11-28' format
+export function loadSettings() {
+  console.log('loading Settings');
+  // Clear out the current elements in the sidebar and main divs
+  const sidebar = document.getElementById('sidebar');
+  sidebar.innerHTML = '';
 
-  // Construct the conditions JSON
-  const conditions = JSON.stringify([{ "date": formattedDate }]);
-  console.log('conditions:', conditions )
+  if(state.isDev) {
+    // load dev settings
+    devSettingsHandler();
+  } else {
+    // Create the "Log In" button
+    const accountButton = document.createElement('button');
+    accountButton.textContent = 'Account';
+    accountButton.id = 'accountButton';
+    accountButton.className = 'sidebarButton';
+    accountButton.addEventListener('click', () => loadSettings());
+    sidebar.appendChild(accountButton);
 
-  // URL encode the conditions JSON
-  const encodedConditions = encodeURIComponent(conditions);
-
-  // Construct the full URL with the encoded query string
-  const endpoint = state.host + `/log?conditions=${encodedConditions}`;
-  console.log('endPoint:', endpoint )
-
-  const headers = {
-    'Authorization': `Bearer ${state.token}`
-  };
-
-  // Perform the fetch request with the Authorization header
-  fetch(endpoint, { headers: headers })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(logEntries => {
-      const logContent = document.getElementById('log-content');
-      logContent.innerHTML = ''; // Clear previous entries
-
-      if (!Array.isArray(logEntries)) {
-        // If 'logEntries' is not an array, log and throw an error
-        console.error('Expected an array of log entries, but received:', logEntries);
-        throw new Error('Data format error: Expected an array of log entries');
-      }
-
-      // Sort logEntries in descending order based on the 'created' field
-      logEntries.sort((a, b) => new Date(b.created) - new Date(a.created));
-      console.log('sorted log:', logEntries)
-
-      // If 'logEntries' is an array, proceed to populate the log details
-      logEntries.forEach(entry => {
-        //console.log('Processing log entry:', entry); // Log the current log entry being processed
-        const entryElement = document.createElement('div');
-        entryElement.textContent = `${entry.created} - ${entry.type} - ${entry.message}`;
-        entryElement.className = 'contentRow';
-        logContent.appendChild(entryElement);
-      });
-    })
-    .catch(error => {
-      // Log and handle any errors that occurred during the fetch
-      console.error('Error fetching log details:', error);
-    });
+    // load user settings
+    const params = {username: state.userName, accessLevel: state.accessLevel}
+    userSettingsHandler(params)
+  }
 }
 
-// Event listener for DOMContentLoaded
-  document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('logIcon').addEventListener('click', fetchLogDates);
+// ON LOAD
+document.addEventListener('DOMContentLoaded', function() {
+  // document.getElementById('logIcon').addEventListener('click', fetchLogDates);
   document.getElementById('settingsIcon').addEventListener('click', loadSettings);
+  initSettings()
 
-  // Fetch log dates on initial load
-  loadSettings();
 });

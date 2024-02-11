@@ -1,10 +1,49 @@
 import {setState, getState} from './state.js'
+import {loadSettings,createButton} from './index.js'
 
 const state = getState()
 
+function askForPassword() {
+    console.log("permission alert called")
+    return new Promise((resolve) => {
+        const password = window.prompt("Please enter your password:");
+        resolve(password);
+    });
+}
+
+function reloadSettings(users) {
+    console.log('reload called')
+    // console.log('users:', users);
+
+    const sidebar = document.getElementById('sidebar');
+    sidebar.innerHTML = '';
+
+    if (state.isDev) {
+        const devSettingsButton = createButton('Developer Settings', 'devSettings', 'sidebarButton', devFunctionsHandler);
+        sidebar.appendChild(devSettingsButton);
+        const companySettingsButton = createButton(state.company, 'compSettingsBtn', 'sidebarButton company', companySettingsHandler);
+        sidebar.appendChild(companySettingsButton);
+    }
+
+    if (users.length === 0) {
+        sidebar.appendChild(createNoUsersMessage());
+    } else {
+        users.forEach(user => {
+            try {
+                const userButton = createButton(user.username, null, 'sidebarButton user', () => userSettingsHandler(user));
+                userButton.dataset.userAccess = user.access;
+                sidebar.appendChild(userButton);
+            } catch (error) {
+                console.error('Error creating button for user:', user, error);
+            }
+        });
+    }
+}
+
 //USERS
-async function getUsers() {
-    console.log('getting company users');
+export async function getUsers() {
+    console.log('getting users');
+    console.log('state: ', state);
 
     try {
         const response = await fetch(state.host + '/companyUsers', {
@@ -30,42 +69,159 @@ async function getUsers() {
     }
 }
 
-function reloadSettings(users) {
-    console.log('reload called')
-    // console.log('users:', users);
+export function userSettingsHandler(user) {
+    console.log(`User Settings`);
 
-    const sidebar = document.getElementById('sidebar');
-    sidebar.innerHTML = '';
+    // Clear the log-content div
+    const logContent = document.getElementById('log-content');
+    logContent.innerHTML = '';
 
-    const devSettingsButton = createButton('Developer Settings', 'devSettings', 'sidebarButton', developerSettingsHandler);
-    sidebar.appendChild(devSettingsButton);
+    // Create the user name header 
+    const userName = document.createElement('h1');
+    userName.className = 'logH1';
+    userName.textContent = user.username;
 
-    const companySettingsButton = createButton(state.company, 'compSettingsBtn', 'sidebarButton company', companySettingsHandler);
-    sidebar.appendChild(companySettingsButton);
+    // Append user name to logContent
+    logContent.appendChild(userName);
 
-    if (users.length === 0) {
-        sidebar.appendChild(createNoUsersMessage());
-    } else {
-        users.forEach(user => {
-            try {
-                const userButton = createButton(user.username, null, 'sidebarButton user', () => userSettingsHandler(user));
-                userButton.dataset.userAccess = user.access;
-                sidebar.appendChild(userButton);
-            } catch (error) {
-                console.error('Error creating button for user:', user, error);
-            }
-        });
+    // button to reset password
+    const resetButton = createButton('reset password', null, 'formButton', () => handlePasswordReset(user));
+    logContent.appendChild(resetButton);
+
+    if (state.isDev) {
+        // button to send verification email
+        const verifyButton = createButton('resend verification email', null, 'formButton', () => handleVerifyEmail(user));
+        logContent.appendChild(verifyButton);
+
+        // button to lock user
+        const lockButton = createButton('lock user', null, 'formButton', () => handleLockUser(user));
+        logContent.appendChild(lockButton);
+
+        // button to delete user
+        const deleteButton = createButton('delete user', null, 'formButton', () => handleDeleteUser(user));
+        logContent.appendChild(deleteButton);
+
+        // button to get token (dev only) needed to create log access in user projects
+        const tokenButton = createButton('get user token', null, 'formButton', () => generateUserToken(user));
+        logContent.appendChild(tokenButton);
     }
 }
 
-function createButton(text, id, className, eventHandler) {
-    const button = document.createElement('button');
-    button.textContent = text;
-    if (id) button.id = id;
-    button.className = className;
-    button.addEventListener('click', eventHandler);
-    return button;
+
+function handlePasswordReset(user) {
+    // call endpoint to reset user password
 }
+
+function handleVerifyEmail(user) {
+    // call endpoint to send/resend verification email
+
+}
+
+function handleLockUser(user) {
+    // call endpoint to lock user
+}
+
+function handleDeleteUser(user) {
+    // call endpoint to delete user
+
+}
+
+
+//COMPANY
+async function loadCompanyHandler(event) {
+    console.log('load company clicked');
+    console.log(event);
+    event.preventDefault(); // Prevent the default form submission
+
+    const logContent = document.getElementById('log-content');    
+    
+    // Check if password is available
+    if (!state.password) {
+        // if this is a reset, which is likely given the password was cleared, clear apiKey
+        // setState('apiKey', 'Replace', "");
+        // setState('company', 'Replace', "");
+        // Since state.password is empty, ask for it again
+        state.password = await askForPassword();
+        if (!state.password) {
+            alert("Password is required to proceed.");
+            return; // Exit the function if no password was provided
+        }
+    }
+
+    // Extract form data
+    const formData = new FormData(event.target);
+    const requestData = {
+        company: formData.get('companyName'),
+        username: state.userName,
+        password: state.password
+    };
+    console.log(`requested data: ${JSON.stringify(requestData)}`);
+
+    fetch(state.host + '/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json(); // Convert response to JSON
+    })
+    .then(responseData => {
+        console.log('response data: ', responseData)
+        // Check if the response has a token
+        if (responseData.token) {
+            setState('token', 'Replace', responseData.token);
+        }
+
+        // Check if the response has a company and it's not null
+        if (responseData.apiKey != null) {
+            // If an API key exists, replace the necessary state values
+            setState('apiKey', 'Replace', responseData.apiKey);
+            setState('company', 'Replace', requestData.company);
+            setState('password', 'Replace', "");
+        } else {
+            // If no company found, prompt the user to create a new company
+            const wantsToCreateCompany = window.confirm("No company found. Do you want to create a new company?");
+            if (wantsToCreateCompany) {
+                // User chose to create a new company
+                createNewCompany(requestData);
+            } else {
+                // User chose not to create a new company, cancel the process
+                console.log("Process cancelled by the user.");
+                setState('password', 'Replace', "");
+            }
+        }
+        
+        const accessLevel = responseData.userAccess;
+        const isDev = accessLevel==="dev";
+        const userRest = responseData.userReset;
+
+        setState('isDev', 'Replace', isDev);
+        setState('accessLevel', 'Replace', accessLevel);
+
+        console.log('load state: ', state);
+
+        loadSettings()
+
+    })
+    .catch(error => {
+        // Display error message 
+        // Check if there is an existing responseDiv and remove it
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = `Error: ${error.message}`;
+        errorDiv.className = 'apiResponse';
+        logContent.appendChild(errorDiv);
+        console.error('There was a problem with the fetch operation:', error.message);
+    });
+};
 
 function createNoUsersMessage() {
     const message = document.createElement('p');
@@ -81,7 +237,7 @@ function companySettingsHandler() {
 
     // Header for state.Company
     const header = document.createElement('h1');
-    header.className = 'apiResponse';
+    header.className = 'logH1';
     header.textContent = state.company;
 
     // Button lock access
@@ -108,236 +264,51 @@ function handleSummarizeAccess() {
 
 }
 
-function userSettingsHandler(user) {
-    console.log('User Settings clicked');
-    // Clear the log-content div
-    const logContent = document.getElementById('log-content');
-    logContent.innerHTML = '';
-
-    // Create the user name header 
-    const userName = document.createElement('h1');
-    userName.className = 'apiResponse';
-    userName.textContent = user.username;
-
-    // button to reset password
-    const resetButton = createButton('reset password', null, 'formButton',  () => handlePasswordReset(user));
-
-    // button to send verification email
-    const verifyButton = createButton('resend verification email', null, 'formButton',  () => handleVerifyEmail(user));
-
-    // button to lock user
-    const lockButton = createButton('lock user', null, 'formButton',  () => handleLockUser(user));
-
-    // button to delete user
-    const deleteButton = createButton('delete user', null, 'formButton',  () => handleDeleteUser(user));
-
-    // button to get token (dev only) needed to create log access in user projects
-    const tokenButton = createButton('get user token', null, 'formButton', () => generateUserToken(user));
-
-    logContent.appendChild(userName);
-    logContent.appendChild(lockButton);
-    logContent.appendChild(deleteButton);
-    logContent.appendChild(resetButton);
-    logContent.appendChild(verifyButton);
-    logContent.appendChild(tokenButton);
-}
-
-function handlePasswordReset(user) {
-    // call endpoint to reset user password
-}
-
-function handleVerifyEmail(user) {
-    // call endpoint to send/resend verification email
-
-}
-
-function handleLockUser(user) {
-    // call endpoint to lock user
-}
-
-function handleDeleteUser(user) {
-    // call endpoint to delete user
-
-}
-
-export async function generateUserToken(user) {
-    console.log('Generate Token clicked');
-
-    const logContent = document.getElementById('log-content');
-
-    fetch(state.host + '/user_token', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + state.token
-        },
-        body: JSON.stringify({
-            'username': user.username,
-            'access': user.access
-        }),
-    })
-    .then( async response => {
-        if (!response.ok) {
-            const errorResponse = await response.json(); // Convert response to JSON
-            throw new Error(errorResponse.message);
-        }
-        const info = await response.json(); // Convert response to JSON
-        // Check if there is an existing responseDiv and remove it
-        const existingResponseDiv = logContent.querySelector('.apiResponse');
-        if (existingResponseDiv) {
-            logContent.removeChild(existingResponseDiv);
-        }
-        const responseDiv = document.createElement('div');
-        responseDiv.innerHTML = info.message + '<br>' + info.token; // Using innerHTML to include HTML line break
-        responseDiv.className = 'apiResponse';
-        logContent.appendChild(responseDiv);
-    })
-    .catch(error => {
-        // Display error message
-        const existingResponseDiv = logContent.querySelector('.apiResponse');
-        if (existingResponseDiv) {
-            logContent.removeChild(existingResponseDiv);
-        }
-        const errorDiv = document.createElement('div');
-        errorDiv.textContent = `Error: ${error.message}`; // Display the message from the server
-        errorDiv.className = 'apiResponse';
-        logContent.appendChild(errorDiv);
-
-        console.error('There was a problem with the fetch operation:', error.message);
-    });
-
-}
-
-// DEVELOPER log in
-export function developerSettingsHandler() {
-    // console.log('state: ', state)
-    if (!state.devCredentials.username) {
-        console.log('Developer Settings clicked');
-        // Clear the log-content div
+// DEVELOPER SETTINGS
+// forms to display developer functions
+export function devSettingsHandler() {
+    console.log('dev settings handler')
+    if (!state.company || !state.apiKey) {
+        console.log('company info required')
         const logContent = document.getElementById('log-content');
-        logContent.innerHTML = '';
-
-        // Create the form element
+        //init the company form
         const form = document.createElement('form');
-        form.addEventListener('submit', handleDevSubmit);
+        form.addEventListener('submit', loadCompanyHandler);
 
-        // Create the company name input
+        // Create the user name (email) input
         const companyNameInput = document.createElement('input');
         companyNameInput.type = 'text';
         companyNameInput.name = 'companyName';
         companyNameInput.className = 'formInput';
-        companyNameInput.placeholder = 'Company Name';
+        companyNameInput.placeholder = '+ Company Name';
         companyNameInput.required = true;
-
-        // pre-populate companyName if saved
-        const savedCompanyName = localStorage.getItem("companyName");
-        if (savedCompanyName) {
-            companyNameInput.value = savedCompanyName;
-        }
-
-        // Create the user name (email) input
-        const userNameInput = document.createElement('input');
-        userNameInput.type = 'text';
-        userNameInput.name = 'userName';
-        userNameInput.className = 'formInput';
-        userNameInput.placeholder = 'Dev Name';
-        userNameInput.required = true;
-
-        // Create the password input
-        const passwordInput = document.createElement('input');
-        passwordInput.type = 'password';
-        passwordInput.name = 'password';
-        passwordInput.className = 'formInput';
-        passwordInput.placeholder = 'Password';
-        passwordInput.required = true;
 
         // Create the submit button
         const submitButton = document.createElement('button');
         submitButton.type = 'submit';
         submitButton.className = 'formButton';
-        submitButton.textContent = 'Log In';
-
-        // Append inputs and button to the form
+        submitButton.textContent = 'Submit';
         form.appendChild(companyNameInput);
-        form.appendChild(userNameInput);
-        form.appendChild(passwordInput);
         form.appendChild(submitButton);
-
-        // Append the form to the log-content div
         logContent.appendChild(form);
-    } else {
-        // If state.devCredentials is not null, run devFunctionsHandler
+
+    } else {  
+        console.log('dev functions load'); 
+
+        // load dev settingds
+        const sidebar = document.getElementById('sidebar');
+        sidebar.innerHTML = '';
+        // load dev functions button
+        const devSettingsButton = createButton('Developer Settings', 'devSettings', 'sidebarButton', devFunctionsHandler);
+        sidebar.appendChild(devSettingsButton);
+        // load company functions button
+        const companySettingsButton = createButton(state.company, 'compSettingsBtn', 'sidebarButton company', companySettingsHandler);
+        sidebar.appendChild(companySettingsButton);
+        // load dev functions
         devFunctionsHandler();
     }
-} 
+};
 
-export function handleDevSubmit(event) {
-    console.log('dev submission clicked');
-    event.preventDefault(); // Prevent the default form submission
-
-    const logContent = document.getElementById('log-content');
-
-    // Extract form data
-    const formData = new FormData(event.target);
-    const companyName = formData.get('companyName');
-    const requestData = {
-        username: formData.get('userName'),
-        password: formData.get('password'),
-        company: formData.get('companyName')
-    };
-    
-    // store users input company name for next login
-    localStorage.setItem("companyName", companyName);
-
-    fetch(state.host + '/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json(); // Convert response to JSON
-    })
-    .then(responseData => {
-        console.log('response data: ', responseData)
-        // Check if the response has a token
-        if (responseData.token) {
-            setState('token', 'Replace', responseData.token);
-        }
-
-        // Check if the response has a company and it's not null
-        if (responseData.apiKey != null) {
-            setState('company', 'Replace', companyName);
-            setState('apiKey', 'Replace', responseData.apiKey);
-        }
-        setState('devCredentials', 'Replace', {username: requestData.username, password: requestData.password})
-
-        // Call developerHandler with the response data
-        devFunctionsHandler();
-    })
-    .catch(error => {
-        // Display error message 
-        // Check if there is an existing responseDiv and remove it
-        const existingResponseDiv = logContent.querySelector('.apiResponse');
-        if (existingResponseDiv) {
-            logContent.removeChild(existingResponseDiv);
-        }
-        const errorDiv = document.createElement('div');
-        errorDiv.textContent = `Error: ${error.message}`;
-        errorDiv.className = 'apiResponse';
-        logContent.appendChild(errorDiv);
-        console.error('There was a problem with the fetch operation:', error.message);
-    });
-    console.log('state: ', state);
-}
-//on success loads developer functions
-//
-//
-// forms to display developer functions
 export function devFunctionsHandler() {
     console.log('dev functions handler');
     // Clear the log-content div
@@ -346,7 +317,7 @@ export function devFunctionsHandler() {
 
     // Create the first form for company creation/change state
     const formCompany = document.createElement('form');
-    formCompany.addEventListener('submit', updateDevFunctionsHandler);
+    formCompany.addEventListener('submit', loadCompanyHandler);
 
     // Create the company name input for the first form
     const companyNameInput1 = document.createElement('input');
@@ -356,16 +327,11 @@ export function devFunctionsHandler() {
     companyNameInput1.placeholder = 'Company Name';
     companyNameInput1.required = true;
 
-    // // Check if company exists in state and update input value
-    // if (state.company) {
-    //     companyNameInput1.value = state.company;
-    // }
-
     // Create the submit button for the first form
     const companyButton = document.createElement('button');
     companyButton.type = 'submit';
     companyButton.className = 'formButton';
-    companyButton.textContent = state.company ? 'Switch Company' : 'Create Company';
+    companyButton.textContent = 'Switch Company' ;
 
     // Append inputs and button to the first form
     formCompany.appendChild(companyNameInput1);
@@ -455,22 +421,8 @@ export function devFunctionsHandler() {
     }
 }
 
-// submit company form. 
-export async function updateDevFunctionsHandler(event) {
-    console.log("create/update company was clicked")
-    event.preventDefault(); // Prevent the default form submission
-
-    const logContent = document.getElementById('log-content');
-
-    // Extract form data
-    console.log("state: ", state)
-    const formData = new FormData(event.target);
-    const data = {
-        company: formData.get('companyName'), // Use the 'name' attribute of the input field
-        DEVun: state.devCredentials.username,
-        DEVpw: state.devCredentials.password,
-    };
-    console.log("company create/update Data: ", data)
+export async function createNewCompany(data) {
+    console.log("create company was clicked")
 
     fetch(state.host + '/createCompany', {
         method: 'POST',
@@ -522,70 +474,8 @@ export async function createUserHandler(event) {
     };
 
     try {
-        // Make the API call
-        const response = await fetch(state.host+'/createUser', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
-        console.log(response)
-        if (!response.ok) { // Check for response.ok instead of a specific status
-            // Try to parse the error response body to get the error message
-            const errorResponse = await response.json(); // Assumes the server responds with JSON-formatted error
-            throw new Error(errorResponse.message || 'Unknown error occurred');
-        }
-
-        const responseData = await response.json(); // Convert response to JSON
-
-        // If response is OK, Display success
-        // Check if there is an existing responseDiv and remove it
-        const existingResponseDiv = logContent.querySelector('.apiResponse');
-        if (existingResponseDiv) {
-            logContent.removeChild(existingResponseDiv);
-        }
-
-        // Create a new responseDiv
-        const responseDiv = document.createElement('div');
-        responseDiv.textContent = `Created: ${responseData.message}`; // Assuming responseData contains a message field
-        responseDiv.className = 'apiResponse';
-        logContent.appendChild(responseDiv);
-    } catch (error) {
-        // Display error message
-        // Check if there is an existing responseDiv and remove it
-        const existingResponseDiv = logContent.querySelector('.apiResponse');
-        if (existingResponseDiv) {
-            logContent.removeChild(existingResponseDiv);
-        }
-
-        // Create a new responseDiv
-        const errorDiv = document.createElement('div');
-        errorDiv.textContent = `Error: ${error.message || error}`;
-        errorDiv.className = 'apiResponse';
-        logContent.appendChild(errorDiv);
-
-        console.error('There was a problem with the fetch operation:', error);
-    }
-}
-
-export async function handleFormSubmit(event) {
-    console.log('form submission clicked');
-    event.preventDefault(); // Prevent the default form submission
-
-    const logContent = document.getElementById('log-content');
-
-    // Extract form data
-    const formData = new FormData(event.target);
-    const data = {
-        company: formData.get('companyName'),
-        username: formData.get('userName'),
-        password: formData.get('password')
-    };
-
-    try {
-        // Make the API call
-        const response = await fetch(state.host+'/generateToken', {
+        // Make the API call to create the user
+        const response = await fetch(state.host + '/createUser', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -614,6 +504,10 @@ export async function handleFormSubmit(event) {
 
         responseDiv.className = 'apiResponse';
         logContent.appendChild(responseDiv);
+
+        // After successful user creation, get updated user data and redraw the display
+        const users = await getUsers(); // Wait for getUsers to complete
+        reloadSettings(users); // Reload the settings with the updated user data
     } catch (error) {
         // Display error message
         const errorDiv = document.createElement('div');
@@ -625,22 +519,50 @@ export async function handleFormSubmit(event) {
     }
 }
 
+export async function generateUserToken(user) {
+    console.log('Generate Token clicked');
 
-// INIT FUNCTIONS
-export function loadSettings() {
-    // Clear out the current elements in the sidebar and main divs
-    const sidebar = document.getElementById('sidebar');
     const logContent = document.getElementById('log-content');
-    sidebar.innerHTML = '';
-    logContent.innerHTML = '';
 
-    // Create the "Developer Settings" button
-    const devSettingsButton = document.createElement('button');
-    devSettingsButton.textContent = 'Developer Settings';
-    devSettingsButton.id = 'devSettings';
-    devSettingsButton.className = 'sidebarButton';
-    devSettingsButton.addEventListener('click', developerSettingsHandler);
-    sidebar.appendChild(devSettingsButton);
+    fetch(state.host + '/user_token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + state.token
+        },
+        body: JSON.stringify({
+            'username': user.username,
+            'access': user.access
+        }),
+    })
+    .then( async response => {
+        if (!response.ok) {
+            const errorResponse = await response.json(); // Convert response to JSON
+            throw new Error(errorResponse.message);
+        }
+        const info = await response.json(); // Convert response to JSON
+        // Check if there is an existing responseDiv and remove it
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
+        const responseDiv = document.createElement('div');
+        responseDiv.innerHTML = info.message + '<br>' + info.token; // Using innerHTML to include HTML line break
+        responseDiv.className = 'apiResponse';
+        logContent.appendChild(responseDiv);
+    })
+    .catch(error => {
+        // Display error message
+        const existingResponseDiv = logContent.querySelector('.apiResponse');
+        if (existingResponseDiv) {
+            logContent.removeChild(existingResponseDiv);
+        }
+        const errorDiv = document.createElement('div');
+        errorDiv.textContent = `Error: ${error.message}`; // Display the message from the server
+        errorDiv.className = 'apiResponse';
+        logContent.appendChild(errorDiv);
 
-    developerSettingsHandler()
+        console.error('There was a problem with the fetch operation:', error.message);
+    });
+
 }

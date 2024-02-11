@@ -1,3 +1,13 @@
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+
 :root {
   --bg-color: #ffffff;
   --text-color: #000000;
@@ -122,9 +132,6 @@ body {
 }
 
 
-
-
-
 #log-content {
   font-family: 'Roboto', sans-serif;
   font-size: small;
@@ -134,6 +141,16 @@ body {
   height: 100vh;
   overflow-y: auto;
 }
+
+.logH1 {
+  display: block;
+  font-size: 2em;
+  margin-block-start: 0;
+  margin-block-end: 12px;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-weight: bold;
+  }
 
 .formInput {
   font-family: 'Roboto', sans-serif;
@@ -201,4 +218,104 @@ body {
   background-color: var(--log-entry-bg-color);
   margin-bottom: 1px; /* Optional: adds a little space between each date */
   transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+
+/*--    KANBAN    --*/
+.board {
+  width: 100%;
+  height: 100vh;
+  overflow: scroll;
+  /*background-color: #f4f0ec ;*/
+  background-position: center;
+  background-size: cover;
+}
+
+/* FORM */
+#todo-form {
+  padding: 32px 32px 0;
+}
+
+#todo-form input {
+  padding: 12px;
+  margin-right: 12px;
+  width: 325px;
+
+  border-radius: 4px;
+  border: none;
+
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.25);
+  background: white;
+
+  font-size: 14px;
+  outline: none;
+}
+
+#todo-form button {
+  padding: 12px 32px;
+
+  border-radius: 4px;
+  border: none;
+
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.25);
+  background: #ffffff;
+  color: black;
+
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* BOARD */
+.lanes {
+  display: flex;
+  align-items: flex-start;
+  justify-content: start;
+  gap: 16px;
+
+  padding: 24px 32px;
+
+  overflow: scroll;
+  height: 100%;
+}
+
+.heading {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.swim-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  background: #f4f4f4;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.25);
+
+  padding: 12px;
+  border-radius: 4px;
+  width: 325px;
+  min-height: 120px;
+
+  flex-shrink: 0;
+}
+
+.task {
+  background: white;
+  color: black;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.15);
+
+  padding: 12px;
+  border-radius: 4px;
+
+  font-size: 16px;
+  cursor: move;
+}
+
+.is-dragging {
+  scale: 1.05;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.25);
+  background: rgb(50, 50, 50);
+  color: white;
 }
