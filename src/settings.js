@@ -130,7 +130,7 @@ function handleDeleteUser(user) {
 //COMPANY
 async function loadCompanyHandler(event) {
     console.log('load company clicked');
-    console.log(event);
+    // console.log(event);
     event.preventDefault(); // Prevent the default form submission
 
     const logContent = document.getElementById('log-content');    
@@ -155,7 +155,7 @@ async function loadCompanyHandler(event) {
         username: state.userName,
         password: state.password
     };
-    console.log(`requested data: ${JSON.stringify(requestData)}`);
+    console.log(`requestData: ${JSON.stringify(requestData)}`);
 
     fetch(state.host + '/login', {
         method: 'POST',
@@ -188,6 +188,7 @@ async function loadCompanyHandler(event) {
             const wantsToCreateCompany = window.confirm("No company found. Do you want to create a new company?");
             if (wantsToCreateCompany) {
                 // User chose to create a new company
+                console.log('newCompanySelected', JSON.stringify(requestData));
                 createNewCompany(requestData);
             } else {
                 // User chose not to create a new company, cancel the process
@@ -198,7 +199,7 @@ async function loadCompanyHandler(event) {
         
         const accessLevel = responseData.userAccess;
         const isDev = accessLevel==="dev";
-        const userRest = responseData.userReset;
+        const userReset = responseData.userReset;
 
         setState('isDev', 'Replace', isDev);
         setState('accessLevel', 'Replace', accessLevel);
@@ -268,14 +269,17 @@ function handleSummarizeAccess() {
 // forms to display developer functions
 export function devSettingsHandler() {
     console.log('dev settings handler')
+    const logContent = document.getElementById('log-content');
+    const existingForm = document.getElementById('companyInfo');
     if (!state.company || !state.apiKey) {
-        console.log('company info required')
-        const logContent = document.getElementById('log-content');
+        console.log('company info form')
+        if(!existingForm) {
         //init the company form
         const form = document.createElement('form');
+        form.id = 'companyInfo';
         form.addEventListener('submit', loadCompanyHandler);
 
-        // Create the user name (email) input
+        // Create the company name (email) input
         const companyNameInput = document.createElement('input');
         companyNameInput.type = 'text';
         companyNameInput.name = 'companyName';
@@ -290,8 +294,9 @@ export function devSettingsHandler() {
         submitButton.textContent = 'Submit';
         form.appendChild(companyNameInput);
         form.appendChild(submitButton);
-        logContent.appendChild(form);
 
+        logContent.appendChild(form);
+        }
     } else {  
         console.log('dev functions load'); 
 
@@ -423,7 +428,7 @@ export function devFunctionsHandler() {
 
 export async function createNewCompany(data) {
     console.log("create company was clicked")
-
+    console.log('Request data:', JSON.stringify(data));
     fetch(state.host + '/createCompany', {
         method: 'POST',
         headers: {

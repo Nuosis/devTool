@@ -106,7 +106,7 @@ function handleLogInSubmit(event) {
       const accessLevel = responseData.userAccess;
       const isDev = accessLevel==="dev";
       const isAdmin = isDev || accessLevel === "admin";
-      const userRest = responseData.userReset;
+      const userReset = responseData.userReset;
 
       setState('isDev', 'Replace', isDev);
       setState('isAdmin', 'Replace', isAdmin);
@@ -121,7 +121,7 @@ function handleLogInSubmit(event) {
       createLogIcon();
       // load settings 
       loadSettings()
-     
+    
   })
   .catch(error => {
       // Display error message 
