@@ -9,6 +9,7 @@ function askForPassword() {
         const password = window.prompt("Please enter your password:");
         resolve(password);
     });
+    
 }
 
 function reloadSettings(users) {
@@ -133,7 +134,12 @@ async function loadCompanyHandler(event) {
     // console.log(event);
     event.preventDefault(); // Prevent the default form submission
 
-    const logContent = document.getElementById('log-content');    
+    const logContent = document.getElementById('log-content'); 
+
+    const errorContent = document.getElementById('error');  
+    if (errorContent) {
+        errorContent.remove();
+    }
     
     // Check if password is available
     if (!state.password) {
@@ -189,11 +195,15 @@ async function loadCompanyHandler(event) {
             if (wantsToCreateCompany) {
                 // User chose to create a new company
                 console.log('newCompanySelected', JSON.stringify(requestData));
-                createNewCompany(requestData);
+                const createData = {company: requestData.company, DEVun: requestData.username, DEVpw: requestData.password}
+                console.log("requestData: ", createData)
+                createNewCompany(createData);
+                return
             } else {
                 // User chose not to create a new company, cancel the process
                 console.log("Process cancelled by the user.");
                 setState('password', 'Replace', "");
+                return
             }
         }
         
@@ -326,6 +336,7 @@ export function devFunctionsHandler() {
 
     // Create the company name input for the first form
     const companyNameInput1 = document.createElement('input');
+    companyNameInput1.id = 'companyInput1';
     companyNameInput1.type = 'text';
     companyNameInput1.name = 'companyName';
     companyNameInput1.className = 'formInput';
@@ -364,6 +375,7 @@ export function devFunctionsHandler() {
 
         // Create the company name input for the second form
         const companyNameInput2 = document.createElement('input');
+        companyNameInput2.id = 'companyInput2';
         companyNameInput2.type = 'text';
         companyNameInput2.name = 'companyName';
         companyNameInput2.className = 'formInput';
@@ -428,38 +440,43 @@ export function devFunctionsHandler() {
 
 export async function createNewCompany(data) {
     console.log("create company was clicked")
-    console.log('Request data:', JSON.stringify(data));
-    fetch(state.host + '/createCompany', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    })
-    .then(response => {
+    const logContent = document.getElementById('log-content');
+    console.log("fetchData: ", data)
+
+    try {
+        const response = await fetch(state.host + '/createCompany', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            const errorResponse = await response.json(); // Wait for the JSON response
+            console.error('Server responded with error:', errorResponse);
+            throw new Error(errorResponse.message || `HTTP error! status: ${response.status}`);
         }
-        return response.json(); // Convert response to JSON
-    })
-    .then(responseData => {
+
+        const responseData = await response.json(); // Wait for the JSON response
+        // Handle successful response
+        console.log('Server responded with:', responseData);
         // Set company and token into state
-        setState('company', 'Replace', data.company);
-        setState('apiKey', 'Replace', data.apiKey);
+        setState('company', 'Replace', responseData.company);
+        setState('apiKey', 'Replace', responseData.apiKey);
     
         // Run devFunctionsHandler (assuming it's defined and handles the response data)
         devFunctionsHandler(responseData);
-    })
-    .catch(error => {
+    } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
         // Display error message
         const errorDiv = document.createElement('div');
+        errorDiv.id = 'error';
         errorDiv.textContent = `Error: ${error.message}`;
         errorDiv.className = 'apiError';
         logContent.appendChild(errorDiv);
-        console.error('There was a problem with the fetch operation:', error);
-    });
-    
-} 
+    }
+}
 
 export async function createUserHandler(event) {
     event.preventDefault(); // Prevent the default form submission
@@ -469,14 +486,16 @@ export async function createUserHandler(event) {
 
     // Extract form data
     const formData = new FormData(event.target);
+    password = state.password ? state.password : await askForPassword();
     const data = {
         apiKey: state.apiKey, //needs apiKey not company name
-        username: state.devCredentials.username,
-        password: state.devCredentials.password,
+        username: state.userName,
+        password: password,
         newUserName: formData.get('userName'),
         newPassword: formData.get('password'),
         accessLevel: formData.get('accessLevel'),
     };
+    console.log('data: ', data);
 
     try {
         // Make the API call to create the user
@@ -488,7 +507,7 @@ export async function createUserHandler(event) {
             body: JSON.stringify(data),
         });
 
-        if (response.status !== 200) {
+        if (response.status !== 200 && response.status !== 201) {
             throw new Error('Network response was not ok');
         }
 
