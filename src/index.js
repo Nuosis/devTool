@@ -164,6 +164,7 @@ export function loadSettings() {
 
 // ON LOAD
 document.addEventListener('DOMContentLoaded', function() {
+  console.log("version 1.0.0")
   // document.getElementById('logIcon').addEventListener('click', fetchLogDates);
   document.getElementById('settingsIcon').addEventListener('click', loadSettings);
   initSettings()
