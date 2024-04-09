@@ -70,10 +70,19 @@ function handleLogInSubmit(event) {
 
   // Extract form data
   const formData = new FormData(event.target);
-  const requestData = {
-      username: formData.get('userName'),
-      password: formData.get('password')
-  };
+  let requestData = {};
+  if(formData.get('userName')==='Dev' || formData.get('userName')==="dev"){
+    requestData = {
+        username: formData.get('userName'),
+        password: formData.get('password'),
+    };
+  } else {
+    requestData = {
+        username: formData.get('userName'),
+        password: formData.get('password'),
+        apiKey: "3026890d997ec0315ecf1476d810af4264b6261f72426f09df2d4d3722d61818"
+    };
+  }
 
   setState('userName', 'Replace', requestData.username);
   setState('password', 'Replace', requestData.password);

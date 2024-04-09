@@ -486,16 +486,17 @@ export async function createUserHandler(event) {
 
     // Extract form data
     const formData = new FormData(event.target);
-    password = state.password ? state.password : await askForPassword();
+    //password = state.password ? state.password : await askForPassword();
     const data = {
-        apiKey: state.apiKey, //needs apiKey not company name
-        username: state.userName,
-        password: password,
         newUserName: formData.get('userName'),
         newPassword: formData.get('password'),
         accessLevel: formData.get('accessLevel'),
     };
     console.log('data: ', data);
+
+    const errorMessageDiv = document.getElementById('errorMessage');
+    if(errorMessageDiv) {errorMessageDiv.innerHTML = ""}
+    
 
     try {
         // Make the API call to create the user
@@ -503,6 +504,7 @@ export async function createUserHandler(event) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': 'Bearer '+state.token,
             },
             body: JSON.stringify(data),
         });
@@ -535,6 +537,7 @@ export async function createUserHandler(event) {
     } catch (error) {
         // Display error message
         const errorDiv = document.createElement('div');
+        errorDiv.id = `errorMessage`;
         errorDiv.textContent = `Error: ${error.message}`;
         errorDiv.className = 'apiError';
         logContent.appendChild(errorDiv);
